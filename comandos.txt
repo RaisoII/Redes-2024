@@ -1,3 +1,4 @@
+*Mostrar:
 ip link show
 ip add show [dev eth0]
 ip route show
@@ -5,6 +6,7 @@ ip route get <ip>
 ip rule show
 ip neigh show
 ip maddress show
+cd /etc/bind named-checkconf //busca errores de sintaxis en el DNS
 ______________
 * Asignar IP:
 ip address add <ip.m> dev eth0
