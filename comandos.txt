@@ -1,0 +1,161 @@
+ip link show
+ip add show [dev eth0]
+ip route show
+ip route get <ip>
+ip rule show
+ip neigh show
+ip maddress show
+______________
+* Asignar IP:
+ip address add <ip.m> dev eth0
+ip link set eth0 up
+
+* Borrar IP:
+ip address del <ip.m> dev eth0
+______________
+* Ruteo:
+ip route add default via <ip>
+ip route add <ip.m> via <ip>
+
+* Borrar ruteo:
+ip route del <ip.m> via <ip>
+______________
+* Crear una segunda tabla de ruteo:
+echo "1 isp2" >> /etc/iproute2/rt_tables
+ip route add 0.0.0.0/0 via <ip> table isp2
+
+* mostrar reglas:
+ip rule show
+ 
+* Crear una regla:
+ip rule add from <ip.m> table isp2
+
+* borrar una regla:
+ip rule del from <ip.m> table isp2
+______________
+* Bridge:
+ip link add name <bridge_name> type bridge
+ip link set ethX master <bridge_name>
+ip link set ethY master <bridge_name>
+ip link set <bridge_name> up
+______________
+* Bonding:
+ip link add <bond_name> type bond mode active-backup
+ip link set ethX master <bond_name>
+ip link set ethY master <bond_name>
+ip link set <bond_name> up
+______________
+* NAT:
+Estatico:
+iptables -t nat -A POSTROUTING -o eth0 -j SNAT --to-source <ip>
+
+* Borrar un NAT:
+iptables -L --line-numbers -t nat (Ver la tabla de NATs existentes)
+Fijarnos en Chain POSTROUTING (Policy ACCEPT):
+iptables -t nat -D POSTROUTING <numero de linea>
+______________
+* VLAN:
+ip link add link eth0 name eth0.10 type vlan id 10
+ip link set eth0 up
+ip link set eth0.10 up
+Switches:
+ip link add name br10 type bridge
+ip link set ethX master br10
+ip link set eth0.10 master br10
+ip link set br10 up
+______________
+* RIP:
+/etc/init.d/quagga start
+vtysh
+show run  //muestra informacion de las interfaces
+show ip route
+configure terminal
+interface eth0
+ip address <ip.m>
+no shutdown
+exit
+...
+ip route <ip.m> <ip>
+...
+router rip
+network <ip.m>
+network <ip.m>
+redistribute connected
+redistribute static
+______________
+* DHCP Server:
+cd /etc/dhcp
+cp dhcpd.conf.EXAMPLE dhcpd.conf
+vim dhcpd.conf
+// CONFIGURAR EL SCOPE 
+vim /etc/default/isc-dhcp-server
+INTERFACES=“...”
+/etc/init.d/isc-dhcp-server start
+
+* DHCP Client:
+vim /etc/network/interfaces.d/eth0
+auto eth0
+iface eth0 inet dhcp
+ifup eth0
+
+* Static Client:
+vim /etc/network/interfaces.d/eth0
+iface eth0 inet static
+address X
+netmask X
+gateway X
+
+vim /etc/resolv.conf
+nameserver 127.0.0.1
+domain X
+search X X
+______________
+* DNS:
+vim /etc/network/interfaces.d/eth0
+iface eth0 inet static
+address X
+netmask X
+gateway X
+
+vim /etc/resolv.conf
+nameserver 127.0.0.1
+domain X
+search X X
+
+ifup eth0
+
+cd /etc/bind
+vim named.conf.local
+// NOMBRES DE LAS ZONAS
+zone "www.ejemplo.com" {
+type master;
+file "/etc/bind/db.ejemplo.com";
+};
+zone "X.X.X.in-addr.arpa" {
+type master;
+file "/etc/bind/db.X.X.X.in-addr.arpa";
+};
+zone “ejemplo.com” {
+type forward;
+forwarders {X.X.X.X;};
+};
+
+cp db.tricam.com db.www.ejemplo.com
+cp db.2.168.192.in-addr.arpa db.X.X.X.in-addr.arpa
+
+vim db.www.ejemplo.com
+// CONFIGURAR EL ARCHIVO DE ZONA
+
+/etc/init.d/bind9 start
+______________
+* Capturar paquetes:
+tcpdump -tnei eth0
+tcpdump -e arp (paquetes ARP)
+
+* Enviar paquetes:
+ping
+hping3
+traceroute
+______________
+* Proxy:
+#echo 1 > /proc/sys/net/ipv4/conf/eth0/proxy_arp
